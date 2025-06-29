@@ -1015,6 +1015,7 @@ class OSOAA(object):
         cleanup     True to delete the directories with the results.
                     False by default.
         """
+        self.salt = ''
         # Determine the type of operating system
         self.os = platform.system()
 
@@ -1339,7 +1340,8 @@ class OSOAA(object):
         #   ----------------------------------
         # We hash the config file to use as folder name
         if self.customresroot is False:
-            hashed = hashlib.md5(sc.encode()).hexdigest()
+            hashed = hashlib.md5((sc + self.salt).encode()).hexdigest()
+            # print(self.salt, hashed)
             self.resroot = os.path.join(self.root, "results", hashed)
 
         if self.logfile is None:
@@ -1383,10 +1385,14 @@ class OSOAA(object):
         else:
             # Run script with ksh
             if forcerun:
-                os.system("ksh " + self.resroot + "/script.kzh")
+                os.system("bash " + self.resroot + f"/script.kzh > {self.resroot}/stdout 2>&1")
 
         # read OUTPUTS
-        self.outputs = OUTPUTS(self.resroot, self.results)
+        try:
+            self.outputs = OUTPUTS(self.resroot, self.results)
+        except Exception:
+            os.system(f"cat {self.resroot}/stdout")
+            raise
 
         # delete result file
         if self.cleanup is True:
